@@ -219,7 +219,7 @@ def do_load(tag, args, lines):
     if len(args) != 1:
         raise TypeError("load expects a unique argument")
     with device(args[0]) as dev:
-        with Config(dev) as cu:
+        with Config(dev, mode='private') as cu:
             try:
                 cu.load("\n".join(lines))
             except ConfigLoadError as ce:
@@ -237,7 +237,7 @@ def do_diff(tag, args, lines):
     if len(args) != 1:
         raise TypeError("diff expects a unique argument")
     with device(args[0]) as dev:
-        with Config(dev) as cu:
+        with Config(dev, mode='private') as cu:
             diff = cu.diff()
             output(tag, ["ok", (diff and diff.strip()) or ""])
 
@@ -248,7 +248,7 @@ def do_check(tag, args, lines):
     if len(args) != 1:
         raise TypeError("check expects a unique argument")
     with device(args[0]) as dev:
-        with Config(dev) as cu:
+        with Config(dev, mode='private') as cu:
             try:
                 cu.commit_check()
             except CommitError as ce:
@@ -269,7 +269,7 @@ def do_rollback(tag, args, lines):
     if len(args) == 2:
         rid = int(args[1])
     with device(args[0]) as dev:
-        with Config(dev) as cu:
+        with Config(dev, mode='private') as cu:
             cu.rollback(rid)
             output(tag, "ok")
 
@@ -280,7 +280,7 @@ def do_commit(tag, args, lines):
     if len(args) not in (1, 2):
         raise TypeError("commit expects one or two arguments")
     with device(args[0]) as dev:
-        with Config(dev) as cu:
+        with Config(dev, mode='private') as cu:
             try:
                 if len(args) == 2:
                     cu.commit(confirm=int(args[1]))
