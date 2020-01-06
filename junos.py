@@ -87,6 +87,7 @@ import functools
 import contextlib
 import traceback
 import pprint
+import keyring
 
 from jnpr.junos import Device
 from jnpr.junos.utils.config import Config
@@ -175,6 +176,15 @@ def device(connect_string):
                 raise ValueError("unparsable host string")
             args = {k: v for k, v in mo.groupdict().items()
                     if v is not None}
+
+            # take password from keychain
+            if args['password'] == '***':
+                keychainPass = keyring.get_password("signum", args['user'])
+                if keychainPass:
+                    args['password'] = keychainPass
+                else:
+                    print('Keychain password not found for {}'.format(args['user']))
+                
             device = Device(**args)
             lock = threading.Lock()
             device_list[connect_string] = device, lock
