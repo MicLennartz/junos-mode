@@ -176,15 +176,18 @@ def device(connect_string):
                 raise ValueError("unparsable host string")
             args = {k: v for k, v in mo.groupdict().items()
                     if v is not None}
-
+            
             # take password from keychain
-            if args['password'] == '***':
-                keychainPass = keyring.get_password("signum", args['user'])
-                if keychainPass:
-                    args['password'] = keychainPass
-                else:
-                    print('Keychain password not found for {}'.format(args['user']))
-                
+            if 'user' in args and 'password' is None:
+              try:
+                  keychainPass = keyring.get_password("signum", args['user'])
+                  args['password'] = keychainPass
+                  output("*", 'Using password from keychain')
+              except:
+                  output("*", 'Keychain password not found for {}'.format(args['user']))
+
+            output("*", "Password is {}".format(args['password']))
+            
             device = Device(**args)
             lock = threading.Lock()
             device_list[connect_string] = device, lock
@@ -229,7 +232,7 @@ def do_load(tag, args, lines):
     if len(args) != 1:
         raise TypeError("load expects a unique argument")
     with device(args[0]) as dev:
-        with Config(dev, mode='private') as cu:
+        with Config(dev) as cu:
             try:
                 cu.load("\n".join(lines))
             except ConfigLoadError as ce:
@@ -247,7 +250,7 @@ def do_diff(tag, args, lines):
     if len(args) != 1:
         raise TypeError("diff expects a unique argument")
     with device(args[0]) as dev:
-        with Config(dev, mode='private') as cu:
+        with Config(dev) as cu:
             diff = cu.diff()
             output(tag, ["ok", (diff and diff.strip()) or ""])
 
@@ -258,7 +261,7 @@ def do_check(tag, args, lines):
     if len(args) != 1:
         raise TypeError("check expects a unique argument")
     with device(args[0]) as dev:
-        with Config(dev, mode='private') as cu:
+        with Config(dev) as cu:
             try:
                 cu.commit_check()
             except CommitError as ce:
@@ -279,7 +282,7 @@ def do_rollback(tag, args, lines):
     if len(args) == 2:
         rid = int(args[1])
     with device(args[0]) as dev:
-        with Config(dev, mode='private') as cu:
+        with Config(dev) as cu:
             cu.rollback(rid)
             output(tag, "ok")
 
@@ -290,7 +293,7 @@ def do_commit(tag, args, lines):
     if len(args) not in (1, 2):
         raise TypeError("commit expects one or two arguments")
     with device(args[0]) as dev:
-        with Config(dev, mode='private') as cu:
+        with Config(dev) as cu:
             try:
                 if len(args) == 2:
                     cu.commit(confirm=int(args[1]))
